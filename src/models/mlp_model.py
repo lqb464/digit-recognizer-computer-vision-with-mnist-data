@@ -20,22 +20,16 @@ class MlpConfig:
     validation_fraction: float = 0.1
 
 
-def train_eval_mlp(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_val: np.ndarray,
-    y_val: np.ndarray,
-    *,
-    random_state: int = 42,
-    cfg: MlpConfig | None = None,
-) -> dict[str, float]:
-    """Train/eval một MLPClassifier trên split train/val.
+@dataclass(frozen=True)
+class MlpEvalResult:
+    scores: dict[str, float]
+    model: MLPClassifier
 
-    Assumption: dữ liệu ảnh MNIST nên được scale về 0..1 để hội tụ tốt hơn.
-    """
+
+
+def build_mlp_classifier(*, random_state: int = 42, cfg: MlpConfig | None = None) -> MLPClassifier:
     cfg = cfg or MlpConfig()
-
-    model = MLPClassifier(
+    return MLPClassifier(
         hidden_layer_sizes=cfg.hidden_layer_sizes,
         activation=cfg.activation,
         solver=cfg.solver,
@@ -49,10 +43,35 @@ def train_eval_mlp(
         verbose=False,
     )
 
+
+
+def train_eval_mlp(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    *,
+    random_state: int = 42,
+    cfg: MlpConfig | None = None,
+) -> MlpEvalResult:
+    cfg = cfg or MlpConfig()
+    model = build_mlp_classifier(random_state=random_state, cfg=cfg)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_val)
-    acc = accuracy_score(y_val, y_pred)
+    acc = float(accuracy_score(y_val, y_pred))
     print(f"mlp accuracy: {acc:.5f}")
+    return MlpEvalResult(scores={"mlp": acc}, model=model)
 
-    return {"mlp": float(acc)}
 
+
+def train_mlp(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    *,
+    random_state: int = 42,
+    cfg: MlpConfig | None = None,
+) -> MLPClassifier:
+    cfg = cfg or MlpConfig()
+    model = build_mlp_classifier(random_state=random_state, cfg=cfg)
+    model.fit(X_train, y_train)
+    return model

@@ -1,104 +1,264 @@
-# README
+# Digit Recognizer Project
 
-## Giới thiệu
+## 1. Overview
 
-Dự án thử nghiệm nhận dạng chữ số (MNIST / Kaggle Digit Recognizer) với một số baseline models và nhóm model “nâng cao”.
+This project trains machine learning models to classify handwritten digits.
+The system supports two groups of models:
 
-## Yêu cầu hệ thống
+1. Classical machine learning baseline models
+2. A neural network model (MLP)
 
-- Python >= 3.8 (tại thời điểm build project này dùng 3.12)
-- Thư viện Python:
-  - `numpy`
-  - `pandas`
-  - `scikit-learn`
-- Dataset:
-  - `dataset/train.csv`
-  - `dataset/test.csv`
+The training pipeline is organized into **two phases**:
 
-## Cài đặt
+**Phase 1 — Model Selection**
+Multiple models are trained on a train/validation split and evaluated.
+The best performing model architecture is selected.
 
-1. Clone repository về máy:
+**Phase 2 — Final Training**
+Only the selected best model is retrained using the full training dataset.
 
-    ```cmd
-    git clone <đường dẫn repo>
-    cd <tên folder dự án>
-    ```
+This design avoids data leakage and ensures the final model uses all available training data.
 
-2. (Tùy chọn) Tạo và kích hoạt Python virtual environment:
+All results are saved inside the `output` directory.
 
-   ```cmd
-   python -m venv venv
-   venv\Scripts\activate
-   ```
+---
 
-3. Cài đặt các thư viện phụ thuộc:
+## 2. Project Structure
 
-   - Khuyến nghị (dùng `requirements.txt`):
-
-     ```cmd
-     pip install -r requirements.txt
-     ```
-
-   - Hoặc cài thủ công:
-
-     ```cmd
-     pip install numpy pandas scikit-learn matplotlib
-     ```
-
-## Sử dụng
-
-- Chạy baseline models (nhẹ, nhanh):
-
-  ```cmd
-  python -m src.ml.run_models --mode base --train-csv dataset\train.csv --scale
-  ```
-
-- Chạy nhóm models “nâng cao” (nặng hơn, chậm hơn):
-
-  ```cmd
-  python -m src.ml.run_models --mode advanced --train-csv dataset\train.csv --scale
-  ```
-
-- Chạy model MLP (neural network, sklearn `MLPClassifier`):
-
-  ```cmd
-  python -m src.nn.run_mlp --train-csv dataset\train.csv --run-name mlp1 --hidden-layers 256,128 --max-iter 50
-  ```
-
-- Tuỳ chọn hữu ích:
-  - `--test-size 0.2`: tỉ lệ validation split
-  - `--seed 42`: random seed
-  - `--scale`: scale pixel về 0..1 (thường giúp hội tụ nhanh hơn)
-  - `--run-name demo1`: đặt tên run (tạo subfolder trong output)
-  - `--outdir output\ml\base\demo1`: tự chỉ định thư mục output (ML)
-  - `--outdir output\nn\mlp1`: tự chỉ định thư mục output (MLP/NN)
-
-- Output:
-  - Mặc định sẽ ghi vào `output/ml/<mode>/<timestamp>/`
-  - File được tạo:
-    - `scores.json`: gồm `meta` (tham số chạy) và `scores` (accuracy theo model)
-    - `scores.txt`: bản text gọn để xem nhanh
-
-- Output (MLP):
-  - Mặc định sẽ ghi vào `output/nn/<timestamp>/` (hoặc theo `--run-name`)
-  - Trong đó có `scores.json` và `scores.txt`
-
-Ví dụ chạy và lưu theo tên run:
-
-```cmd
-python -m src.ml.run_models --mode base --scale --run-name demo1
+```
+DIGIT-RECOGNIZER/
+│
+├── dataset/
+│   ├── train.csv
+│   └── test.csv
+│
+├── notebooks/
+│
+├── output/
+│
+├── src/
+│   ├── models/
+│   │   ├── base_models.py
+│   │   └── mlp_model.py
+│   │
+│   ├── utils.py
+│   └── run.py
+│
+├── requirements.txt
+└── README.md
 ```
 
-## Đóng góp
+**dataset**
+Contains the input data such as `train.csv` and `test.csv`.
 
-Mọi đóng góp, phản hồi hoặc báo lỗi đều được hoan nghênh qua GitHub issues hoặc pull request.
+**src/models**
+Contains model implementations.
 
-## Giấy phép
+**src/utils.py**
+Helper functions for logging, saving results, and preparing output directories.
 
-Thông tin về giấy phép sử dụng mã nguồn (MIT, GPL, v.v.) hoặc để trống nếu chưa xác định.
+**src/run.py**
+Main training script implementing the full pipeline.
 
-## Liên hệ
+**output**
+Stores experiment results, trained models, and submissions.
 
-Nếu cần hỗ trợ thêm, vui lòng liên hệ qua email hoặc thông tin Github của người phát triển.
+---
 
-*README này sẽ tiếp tục được cập nhật trong quá trình phát triển dự án.*
+## 3. Output Structure
+
+Each run creates a folder inside `output`.
+
+Example:
+
+```
+output/
+  all/
+    exp1/
+      metrics.json
+      metrics.txt
+      leaderboard.csv
+      meta.json
+
+  final/
+    final1/
+      model.joblib
+      submission.csv
+```
+
+Description of files:
+
+**metrics.json**
+Machine readable evaluation metrics.
+
+**metrics.txt**
+Human readable evaluation summary.
+
+**leaderboard.csv**
+Accuracy comparison between all tested models.
+
+**meta.json**
+Metadata describing the experiment configuration.
+
+**model.joblib**
+Serialized final trained model.
+
+**submission.csv**
+Prediction file for Kaggle evaluation.
+
+---
+
+## 4. Installation
+
+Create a Python environment and install dependencies.
+
+```
+pip install -r requirements.txt
+```
+
+---
+
+## 5. Phase 1 — Model Selection
+
+Train models and evaluate them on a validation split.
+
+### Train only the MLP model
+
+```
+python src/run.py --model mlp
+```
+
+### Train baseline models only
+
+```
+python src/run.py --model base
+```
+
+### Train all models
+
+```
+python src/run.py --model all --run-name exp1
+```
+
+This step will:
+
+1. Split the dataset into train/validation
+2. Train the selected models
+3. Evaluate accuracy
+4. Select the best model architecture
+
+Example output:
+
+```
+output/all/exp1/
+```
+
+This folder contains evaluation results but **not the final trained model**.
+
+---
+
+## 6. Phase 2 — Final Training
+
+Retrain the selected best model on the **full training dataset**.
+
+```
+python src/run.py \
+  --fit-full-train \
+  --selection-dir output/all/exp1 \
+  --run-name final1
+```
+
+Output:
+
+```
+output/final/final1/model.joblib
+```
+
+Only the best model is retrained and saved.
+
+---
+
+## 7. Generate Submission
+
+You can generate predictions for the test set using the final model.
+
+```
+python src/run.py \
+  --fit-full-train \
+  --selection-dir output/all/exp1 \
+  --make-submission \
+  --run-name final1
+```
+
+This will produce:
+
+```
+output/final/final1/submission.csv
+```
+
+---
+
+## 8. Predict Using an Existing Model
+
+If a trained model already exists, predictions can be generated without retraining.
+
+```
+python src/run.py \
+  --predict-only \
+  --model-path output/final/final1/model.joblib
+```
+
+---
+
+## 9. Leaderboard File
+
+The system produces a `leaderboard.csv` file showing model performance.
+
+Example:
+
+```
+model,accuracy
+logreg,0.91
+dt,0.86
+mlp,0.97
+```
+
+The model with the highest accuracy is selected for the final training stage.
+
+---
+
+## 10. Typical Workflow
+
+Recommended workflow:
+
+### Step 1 — Model selection
+
+```
+python src/run.py --model all --run-name exp1
+```
+
+### Step 2 — Final training
+
+```
+python src/run.py --fit-full-train --selection-dir output/all/exp1 --run-name final1
+```
+
+### Step 3 — Generate submission
+
+```
+python src/run.py --predict-only --model-path output/final/final1/model.joblib --run-name submit1
+```
+
+---
+
+## 11. Notes
+
+Each run automatically creates a timestamped experiment directory unless a custom `--run-name` is provided.
+
+Example:
+
+```
+python src/run.py --model all --run-name experiment_01
+```
+
+This makes experiments easy to track and reproduce.
